@@ -12,6 +12,13 @@ const getData = async () => {
   querySnapshot.forEach((doc) => {
     temp.push({ ...doc.data(), id: doc.id });
   });
+  // sort docs in ascending order of employeeId.
+  // employeeId is alphanumeric - Example: CCT-101, CCT-102, CCT-103, etc.
+  temp.sort((a, b) => {
+    const aId = a.employeeId.split('-')[1];
+    const bId = b.employeeId.split('-')[1];
+    return aId - bId;
+  });
   return temp;
 };
 
