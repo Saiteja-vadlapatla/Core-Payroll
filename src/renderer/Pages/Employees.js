@@ -34,9 +34,9 @@ const Employees = () => {
   }, []);
 
   const handleAddEmployee = (status) => {
+    setEmployeeId(null);
     setAddCount(addCount + 1);
     setAddOrEdit('add');
-    setEmployeeId(null);
   };
 
   const columns = [

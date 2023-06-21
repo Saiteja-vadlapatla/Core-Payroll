@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, Button, Form, Select, DatePicker, message } from 'antd';
 import Input from 'antd/es/input/Input';
 import {
@@ -23,20 +23,38 @@ const EmployeeForm = (props) => {
   const { handleAddEmployee, employees, context, employeeId } = props;
   const [visible, setVisible] = React.useState(false);
   const [addCount, setAddCount] = React.useState(0);
-  const [f] = Form.useForm();
-  const [messageApi, contextHolder] = message.useMessage();
-  const employeeInfo =
+  const [employeeInfo, setEmployeeInfo] = useState(
     context === 'edit' && employeeId
       ? employees.find((doc) => doc.employeeId === employeeId)
-      : null;
+      : null
+  );
+  const [f] = Form.useForm();
+  const [messageApi, contextHolder] = message.useMessage();
 
   console.log('employeeInfo', employeeInfo, employeeId);
 
   useEffect(() => {
-    console.log('useEffect called', context, employeeId);
+    console.log('useEffect context called', context, employeeId);
     if (context === 'edit') {
       setVisible(true);
     }
+  }, [context]);
+
+  useEffect(() => {
+    // f.resetFields();
+    console.log('useEffect empId called', context, employeeId);
+    let newEmployeeInfo = null;
+    if (context === 'edit' && employeeId) {
+      newEmployeeInfo = employees.find((doc) => doc.employeeId === employeeId);
+      setEmployeeInfo({ ...newEmployeeInfo });
+    } else {
+      setEmployeeInfo(null);
+    }
+    f.setFieldsValue({
+      ...newEmployeeInfo,
+      doj: newEmployeeInfo?.doj ? dayjs(newEmployeeInfo.doj) : '',
+    });
+    console.log(f.getFieldValue('doj'));
   }, [context, employeeId]);
 
   useEffect(() => {
@@ -132,15 +150,8 @@ const EmployeeForm = (props) => {
           f.resetFields();
         }}
       >
-        <Form
-          {...layout}
-          name="basic"
-          form={f}
-          initialValues={{
-            ...employeeInfo,
-            doj: employeeInfo?.doj ? dayjs(employeeInfo.doj) : '',
-          }}
-        >
+        <Form {...layout} name="basic" form={f}>
+          <div>{employeeInfo ? employeeInfo.employeeId : ''}</div>
           <Form.Item
             label="Employee ID"
             name="employeeId"
