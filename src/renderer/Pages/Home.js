@@ -51,6 +51,9 @@ const Home = () => {
       style={{
         height: '100vh',
         width: '100vw',
+        position: 'absolute',
+        top: '-8px',
+        left: '-8px',
       }}
     >
       <Sider trigger={null} collapsible collapsed={collapsed}>
