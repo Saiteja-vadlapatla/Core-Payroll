@@ -15,6 +15,8 @@ import Dashboard from './Dashboard';
 import Employees from './Employees';
 import Attendance from './Attendance';
 import Wages from './Wages';
+import coreLogo from '../../../assets/core-logo.png';
+import './styles/Home.css';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
@@ -95,27 +97,27 @@ const Home = () => {
       </Sider>
       <Layout>
         <Header style={{ padding: 0, background: colorBgContainer }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{
-                fontSize: '16px',
-                width: 64,
-                height: 64,
-              }}
-            />
-            <span style={{ marginLeft: '20px' }}>
-              <Title level={3} style={{ marginTop: '12px' }}>
-                {view}
-              </Title>
-            </span>
+          <div className="header-container">
+            <div className="header-left-content">
+              <Button
+                type="text"
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setCollapsed(!collapsed)}
+                style={{
+                  fontSize: '16px',
+                  width: 64,
+                  height: 64,
+                }}
+              />
+              <span style={{ marginLeft: '20px' }}>
+                <Title level={3} style={{ marginTop: '12px' }}>
+                  {view}
+                </Title>
+              </span>
+            </div>
+            <div className="header-right-content">
+              <img className="header-logo" src={coreLogo} alt="core-logo" />
+            </div>
           </div>
         </Header>
         <Content

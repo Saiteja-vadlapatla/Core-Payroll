@@ -151,7 +151,6 @@ const EmployeeForm = (props) => {
         }}
       >
         <Form {...layout} name="basic" form={f}>
-          <div>{employeeInfo ? employeeInfo.employeeId : ''}</div>
           <Form.Item
             label="Employee ID"
             name="employeeId"
