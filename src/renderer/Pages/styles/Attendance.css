@@ -12,3 +12,36 @@
     justify-content: center;
     margin-bottom: 20px;
 }
+
+.employee__leave__info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  margin: 20px;
+  width: 100%;
+}
+
+.employee-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  width: 100%;
+}
+
+.employee-name-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin: 10px;
+  width: 100%;
+}
+
+.employee-leave-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin: 10px;
+  width: 100%;
+}

@@ -1,12 +1,34 @@
-import { Button } from 'antd';
-import React, { useState } from 'react';
+import { Button, Select } from 'antd';
+import React, { useEffect, useState } from 'react';
 import Calendar from 'renderer/Components/Calendar';
 import './styles/Attendance.css';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { months } from '../../utils/dateUtils';
+import { employeeLeaveSchema } from '../../utils/schemas';
+import { addDoc, collection, getDocs } from 'firebase/firestore';
+import { db } from 'renderer/firebase';
+
 const Attendance = () => {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [employeeLeaves, setEmployeeLeaves] = useState([]);
+  const [currentEmployee, setCurrentEmployee] = useState(null);
+
+  useEffect(() => {
+    // Get the employeeLeaves data on first render
+    const getData = async () => {
+      const querySnapshot = await getDocs(collection(db, 'employeeLeaves'));
+      const temp = [];
+      querySnapshot.forEach((doc) => {
+        temp.push({ ...doc.data(), id: doc.id });
+      });
+      return temp;
+    };
+    getData().then((data) => {
+      console.log('data', data);
+      setEmployeeLeaves(data);
+    });
+  }, []);
 
   const handleMonthChange = (e) => {
     let newCurrentMonth = currentMonth;
@@ -25,18 +47,143 @@ const Attendance = () => {
     setCurrentMonth(newCurrentMonth);
   };
 
+  const handleSelectEmployee = (employeeId) => {
+    // set currentEmployee to the value of employeeId matching object from employeeLeaves
+    const employee = employeeLeaves.find(
+      (employee) => employee.employeeId === employeeId
+    );
+    console.log('employee', employee);
+    setCurrentEmployee(employee);
+  };
+
+  const handleSyncLeaves = () => {
+    // Get the list of all employees from firebase.
+    // For each employee, get the doj from firebase.
+    // For each employee, create an object matching the employeeLeaveSchema.
+    // If the employee has doj available, fill the availableTotalLeaves value based on two conditions:
+    // If the employee doj is more than on year, then availableTotalLeaves = 12
+    // If the employee doj is less than one year, then availableTotalLeaves = (currentMonth - dojMonth)
+    // If the employee has doj not available, then availableTotalLeaves = 0
+    // Implement now.
+
+    const getEmployees = async () => {
+      const employeesRef = collection(db, 'employeeInfo');
+      const employeesSnapshot = await getDocs(employeesRef);
+      const employeesList = employeesSnapshot.docs.map((doc) => doc.data());
+      console.log('employeesList', employeesList);
+      return employeesList;
+    };
+
+    getEmployees().then((employees) => {
+      console.log('employees fetched');
+      console.log(employees);
+      employees.forEach((employee) => {
+        const employeeLeave = JSON.parse(JSON.stringify(employeeLeaveSchema));
+        employeeLeave.employeeId = employee.employeeId;
+        employeeLeave.employeeName = employee.employeeName;
+        employeeLeave.doj = employee.doj;
+        if (employee.status === 'inactive') {
+          return;
+        }
+        if (employee.doj) {
+          const dojMonth = new Date(employee.doj).getMonth();
+          const dojYear = new Date(employee.doj).getFullYear();
+          const currentYear = new Date().getFullYear();
+          const currentMonth = new Date().getMonth();
+          const monthsWorked =
+            (currentYear - dojYear) * 12 + (currentMonth - dojMonth);
+          if (monthsWorked >= 12) {
+            employeeLeave.availableTotalLeaves = 12;
+          } else {
+            employeeLeave.availableTotalLeaves = monthsWorked;
+          }
+        } else {
+          employeeLeave.availableTotalLeaves = 0;
+        }
+        console.log('employeeLeave', employeeLeave);
+        //Save employeeLeave to firebase in a new collection called employeeLeaves.
+
+        addDoc(collection(db, 'employeeLeaves'), {
+          ...JSON.parse(JSON.stringify(employeeLeave)),
+        })
+          .then((docRef) => {
+            console.log('Document written with ID: ', docRef.id);
+          })
+          .catch((error) => {
+            console.error('Error adding document: ', error);
+          });
+      });
+    });
+  };
+
   return (
-    <div className='attendance-container'>
-     <div className='month-selector'>
-        <Button type='primary' shape='round' icon={<LeftOutlined />} disabled={currentMonth===0} onClick={() => {
-          handleMonthChange('prev');
-        }}/>
-        <h1 style={{marginInline: "20px"}}>{months[currentMonth]}</h1>
-        <Button type='primary' shape='round' icon={<RightOutlined />} disabled={currentMonth===11} onClick={() => {
-          handleMonthChange('next');
-        }}/>
-     </div>
-      <Calendar month={currentMonth} absentDays={[5,7,8]}/>
+    <div className="attendance-container">
+      <div className="employee__leave__info">
+        <Select
+          showSearch
+          style={{ width: 300, marginBottom: 20 }}
+          placeholder="Select an employee"
+          optionFilterProp="children"
+          onChange={handleSelectEmployee}
+          // onFocus={onFocus}
+          // onBlur={onBlur}
+          // onSearch={onSearch}
+          filterOption={(input, option) =>
+            option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+          }
+        >
+          {employeeLeaves.map((employeeLeave) => (
+            <Select.Option
+              key={employeeLeave.employeeId}
+              value={employeeLeave.employeeId}
+            >
+              {employeeLeave.employeeName}
+            </Select.Option>
+          ))}
+        </Select>
+        {currentEmployee && (
+          <div className="employee-container">
+            <div className="employee-name-group">
+              <span>Employee Name: {currentEmployee.employeeName}</span>
+              <span>Employee ID: {currentEmployee.employeeId}</span>
+            </div>
+            <div className="employee-leave-group">
+              <span>DOJ: {new Date(currentEmployee.doj).toDateString()}</span>
+              <span>
+                Total Eligible Leaves: {currentEmployee.availableTotalLeaves}
+              </span>
+              <span>Leaves Taken: {currentEmployee.totalLeavesTaken}</span>
+              <span>
+                Available Leaves:{' '}
+                {currentEmployee.availableTotalLeaves -
+                  currentEmployee.totalLeavesTaken}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="month-selector">
+        <Button
+          type="primary"
+          shape="round"
+          icon={<LeftOutlined />}
+          disabled={currentMonth === 0}
+          onClick={() => {
+            handleMonthChange('prev');
+          }}
+        />
+        <h1 style={{ marginInline: '20px' }}>{months[currentMonth]}</h1>
+        <Button
+          type="primary"
+          shape="round"
+          icon={<RightOutlined />}
+          disabled={currentMonth === 11}
+          onClick={() => {
+            handleMonthChange('next');
+          }}
+        />
+      </div>
+      <Calendar month={currentMonth} absentDays={[5, 7, 8]} />
     </div>
   );
 };
