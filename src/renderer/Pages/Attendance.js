@@ -125,9 +125,6 @@ const Attendance = () => {
           placeholder="Select an employee"
           optionFilterProp="children"
           onChange={handleSelectEmployee}
-          // onFocus={onFocus}
-          // onBlur={onBlur}
-          // onSearch={onSearch}
           filterOption={(input, option) =>
             option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
           }
@@ -144,17 +141,17 @@ const Attendance = () => {
         {currentEmployee && (
           <div className="employee-container">
             <div className="employee-name-group">
-              <span>Employee Name: {currentEmployee.employeeName}</span>
-              <span>Employee ID: {currentEmployee.employeeId}</span>
+              <span><strong>Employee Name:</strong> {currentEmployee.employeeName}</span>
+              <span><strong>Employee ID:</strong> {currentEmployee.employeeId}</span>
             </div>
             <div className="employee-leave-group">
-              <span>DOJ: {new Date(currentEmployee.doj).toDateString()}</span>
+              <span><strong>DOJ:</strong> {new Date(currentEmployee.doj).toDateString()}</span>
               <span>
-                Total Eligible Leaves: {currentEmployee.availableTotalLeaves}
+                <strong>Total Eligible Leaves:</strong> {currentEmployee.availableTotalLeaves}
               </span>
-              <span>Leaves Taken: {currentEmployee.totalLeavesTaken}</span>
+              <span><strong>Leaves Taken:</strong> {currentEmployee.totalLeavesTaken}</span>
               <span>
-                Available Leaves:{' '}
+                <strong>Available Leaves:</strong>{' '}
                 {currentEmployee.availableTotalLeaves -
                   currentEmployee.totalLeavesTaken}
               </span>

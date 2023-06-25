@@ -24,10 +24,12 @@
 
 .employee-container {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
-  flex-direction: column;
-  width: 100%;
+  width: 77%;
+  gap: 30%;
+  margin-left: 0%;
+  border: 1px solid black;
 }
 
 .employee-name-group {
@@ -35,13 +37,20 @@
   align-items: center;
   justify-content: space-around;
   margin: 10px;
-  width: 100%;
+  /* width: 100%; */
+  flex-direction: column;
+  align-items: baseline;
+  gap: 20px;
 }
+
 
 .employee-leave-group {
   display: flex;
   align-items: center;
   justify-content: space-around;
   margin: 10px;
-  width: 100%;
+  /* width: 100%; */
+  flex-direction: column;
+  align-items: baseline;
+  gap: 10px;
 }
