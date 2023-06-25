@@ -118,6 +118,14 @@
   background: rgb(153, 153, 248);
 }
 
+.calendar__day__paidleave {
+  background: rgb(128, 128, 246);
+}
+
+.calendar__day__halfday {
+  background: rgb(171, 171, 238);
+}
+
 .calendar__day__inactive {
   background: rgb(255, 142, 77);
 }
