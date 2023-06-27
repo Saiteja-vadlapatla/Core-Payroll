@@ -1,8 +1,18 @@
-import { Button, Input, Modal, Select, Table, Typography } from 'antd';
+import {
+  Button,
+  DatePicker,
+  Input,
+  Modal,
+  Select,
+  Table,
+  Typography,
+} from 'antd';
 import React, { useEffect } from 'react';
 import './styles/Wages.css';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from 'renderer/firebase';
+import { monthsMap } from 'utils/dateUtils';
+import { payrollColumns } from 'utils/columns';
 
 const { Text, Title, Link } = Typography;
 
@@ -17,6 +27,18 @@ const Wages = () => {
   const [wageHistory, setWageHistory] = React.useState([]);
   const [wageInfo, setWageInfo] = React.useState(null);
   const [currentEmployee, setCurrentEmployee] = React.useState(null);
+  const [currentMonth, setCurrentMonth] = React.useState(null);
+  const [currentYear, setCurrentYear] = React.useState(null);
+  const [shouldRunPayroll, setShouldRunPayroll] = React.useState(false);
+  const [attendanceCollectedMonths, setAttendanceCollectedMonths] =
+    React.useState({});
+  const [payrollCollectedMonths, setPayrollCollectedMonths] = React.useState(
+    {}
+  );
+  const [showPayrollRun, setShowPayrollRun] = React.useState(false);
+  const [payrollRunningEmployees, setPayrollRunningEmployees] = React.useState(
+    []
+  );
 
   useEffect(() => {
     // Get Active Employee List
@@ -37,10 +59,24 @@ const Wages = () => {
       return temp;
     };
 
+    const getDataAboutData = async () => {
+      const querySnapshot = await getDocs(collection(db, 'dataAboutData'));
+      querySnapshot.forEach((doc) => {
+        console.log('doc.data()', doc.data());
+        if (doc.data()?.attendanceCollected) {
+          setAttendanceCollectedMonths({ ...doc.data().attendanceCollected });
+        } else if (doc.data()?.payrollsRun) {
+          setPayrollCollectedMonths({ ...doc.data().payrollsRun });
+        }
+      });
+    };
+
     getActiveEmployeeList().then((data) => {
       console.log('data', data);
       setActiveEmployeeList(data);
     });
+
+    getDataAboutData();
   }, []);
 
   useEffect(() => {
@@ -81,6 +117,76 @@ const Wages = () => {
     }
   }, [showWageEditPermission]);
 
+  useEffect(() => {
+    // If payroll is run, then get the list of employees who are active and
+    // map with the wageInfo data
+    if (shouldRunPayroll) {
+      const temp = [];
+      // push if employee in wageInfo is present in activeEmployeeList
+      activeEmployeeList.forEach((employee) => {
+        wageInfo.forEach((wage) => {
+          if (employee.employeeId === wage.employeeId) {
+            temp.push(wage);
+          }
+        });
+      });
+      // Sort temp by employeeId
+      temp.sort((a, b) => {
+        const aId = a.employeeId.split('-')[1];
+        const bId = b.employeeId.split('-')[1];
+        return aId - bId;
+      });
+      // Iterate over each employee and add more data for payroll
+      temp.forEach((employee) => {
+        employee.noOfDaysWorked = 0;
+        employee.allowances = 0;
+        employee.otHours = 0;
+        // OT amount is gross wage / no. of days in month / 8
+        // Calculate no. of days in currentMonth without using any library
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        employee.otAmount =
+          Math.round(
+            (employee.grossWage / daysInMonth / 8) * employee.otHours
+          ) || 0;
+        // add incentive if attendance is 100%. Attendance is 100% if noOfDaysWorked = daysInMonth
+        if (employee.noOfDaysWorked === daysInMonth) {
+          employee.incentives = 200;
+        } else {
+          employee.incentives = 0;
+        }
+        // net wage is gross wage + incentive + otAmount + allowances
+        employee.netWage =
+          employee.grossWage +
+          employee.incentives +
+          employee.otAmount +
+          employee.allowances;
+
+        // wageForPF = if grossWage > 15000, then 15000 else grossWage
+        employee.wageForPF =
+          employee.grossWage > 15000 ? 15000 : employee.grossWage;
+        // wageForESI = if grossWage > 21000, then 21000 else grossWage
+        employee.wageForESI =
+          employee.grossWage > 21000 ? 21000 : employee.grossWage;
+        // professionalTax = 200
+        employee.pfDeducted = Math.round(employee.wageForPF * 0.12);
+        employee.esiDeducted = Math.round(employee.wageForESI * 0.0075);
+        employee.professionalTax = 200;
+        employee.tds = 0;
+        employee.advanceCarryForward = 0;
+        employee.advanceDeducted = 0;
+        employee.advanceBalance = 0;
+        employee.totalDeductions =
+          employee.advanceDeducted +
+          employee.professionalTax +
+          employee.tds +
+          employee.pfDeducted +
+          employee.esiDeducted;
+        employee.netPayable = employee.netWage - employee.totalDeductions;
+      });
+      setPayrollRunningEmployees(temp);
+    }
+  }, [shouldRunPayroll]);
+
   const handleWagePassword = () => {
     console.log(password);
     if (password === 'Core@wagehistory23') {
@@ -88,6 +194,21 @@ const Wages = () => {
     } else if (password === 'Core@wagemaster23') {
       setShowWageViewPermission(true);
       setShowWageEditPermission(true);
+    }
+  };
+
+  const handleMonthChange = (e) => {
+    console.log(e);
+    const month = monthsMap[e.month()];
+    const year = e.year();
+    setCurrentMonth(month);
+    setCurrentYear(year);
+
+    // Check if payroll has been run for this month
+    if (payrollCollectedMonths[year]?.includes(month)) {
+      setShouldRunPayroll(false);
+    } else {
+      setShouldRunPayroll(true);
     }
   };
 
@@ -118,37 +239,24 @@ const Wages = () => {
       title: 'Salary Type',
       dataIndex: 'salaryType',
       key: 'salaryType',
+      // Print salaryType as string with first letter capital
+      render: (text) => (
+        <span>
+          {text
+            ? text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()
+            : ''}
+        </span>
+      ),
     },
     {
       title: 'Gross Wage',
       dataIndex: 'grossWage',
       key: 'grossWage',
     },
-    {
-      hra: 'HRA',
-      dataIndex: 'hra',
-      key: 'hra',
-    },
     // {
-    //   title: 'Status',
-    //   key: 'status',
-    //   dataIndex: 'status',
-    //   // Datatype of status is string. It is either active or inactive.
-    //   // If status is active, then the color of the tag is green.
-    //   // If status is inactive, then the color of the tag is red.
-    //   render: (status) => (
-    //     <React.Fragment>
-    //       {status === 'active' ? (
-    //         <Tag color="green" key={status}>
-    //           {status.toUpperCase()}
-    //         </Tag>
-    //       ) : (
-    //         <Tag color="red" key={status}>
-    //           {status ? status.toUpperCase() : ''}
-    //         </Tag>
-    //       )}
-    //     </React.Fragment>
-    //   ),
+    //   hra: 'HRA',
+    //   dataIndex: 'hra',
+    //   key: 'hra',
     // },
   ];
 
@@ -177,25 +285,25 @@ const Wages = () => {
         <Title disabled={!showWageViewPermission} level={5}>
           Wage History
         </Title>
-        <Select
-          disabled={!showWageViewPermission}
-          showSearch
-          style={{ width: 300, marginBottom: 20 }}
-          placeholder="Select month"
-          optionFilterProp="children"
-          onChange={() => {}}
-          filterOption={(input, option) =>
-            option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-          }
-        >
-          <Select.Option value="january">January</Select.Option>
-          <Select.Option value="february">February</Select.Option>
-        </Select>
+        <div className="month-selector-container">
+          <DatePicker
+            picker="month"
+            disabled={!showWageViewPermission}
+            onSelect={handleMonthChange}
+          />
+          <Button
+            type="primary"
+            onClick={() => {
+              setShowPayrollRun(true);
+            }}
+            disabled={!showWageViewPermission || !shouldRunPayroll}
+          >
+            Run Payroll
+          </Button>
+        </div>
+
         <Table sticky columns={columns} dataSource={wageInfo} />
       </div>
-      <Button type="primary" disabled={!showWageEditPermission}>
-        Edit Employee Wage
-      </Button>
       <Modal
         title="Edit Employee Wage"
         open={showWageEdit}
@@ -215,6 +323,31 @@ const Wages = () => {
         ]}
       >
         <p>Some contents...</p>
+      </Modal>
+      <Modal
+        title={`Payroll for ${currentMonth} ${currentYear}`}
+        open={showPayrollRun}
+        onOk={() => setShowPayrollRun(false)}
+        onCancel={() => setShowPayrollRun(false)}
+        width={'100%'}
+        footer={[
+          <Button key="back" onClick={() => setShowPayrollRun(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            onClick={() => setShowPayrollRun(false)}
+          >
+            Submit
+          </Button>,
+        ]}
+      >
+        <Table
+          sticky
+          columns={[...columns, ...payrollColumns]}
+          dataSource={payrollRunningEmployees}
+        />
       </Modal>
     </div>
   );
