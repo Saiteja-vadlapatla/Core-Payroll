@@ -90,7 +90,7 @@ const Attendance = () => {
       (employee) => employee.employeeId === employeeId
     );
     console.log('employeeAttendance', attendance);
-    employee.attendance = attendance;
+    employee.attendance = attendance || {};
     employee.employeeId = employeeId;
     employee.employeeName = employee.leaves.employeeName;
     console.log(employee);
