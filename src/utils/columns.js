@@ -37,13 +37,13 @@ export const payrollColumns = [
   },
   {
     title: 'Wage/PF',
-    dataIndex: 'wageForPf',
+    dataIndex: 'wageForPF',
     key: 'wageForPf',
     width: 100,
   },
   {
     title: 'Wage/ESI',
-    dataIndex: 'wageForEsi',
+    dataIndex: 'wageForESI',
     key: 'wageForEsi',
     width: 100,
   },
@@ -85,8 +85,8 @@ export const payrollColumns = [
   },
   {
     title: 'Total Ded',
-    dataIndex: 'totalDeduction',
-    key: 'totalDeduction',
+    dataIndex: 'totalDeductions',
+    key: 'totalDeductions',
     width: 100,
   },
   {
@@ -94,5 +94,7 @@ export const payrollColumns = [
     dataIndex: 'netPayable',
     key: 'netPayable',
     width: 100,
+    // Render in bold
+    render: (text) => <b>{text}</b>,
   },
 ];

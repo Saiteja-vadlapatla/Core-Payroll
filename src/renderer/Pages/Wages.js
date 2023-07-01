@@ -255,6 +255,7 @@ const Wages = () => {
       title: 'Employee ID',
       dataIndex: 'employeeId',
       key: 'employeeId',
+      fixed: 'left',
       render: (text) => (
         <Link
           disabled={!showWageViewPermission}
@@ -272,6 +273,7 @@ const Wages = () => {
       title: 'Employee Name',
       dataIndex: 'employeeName',
       key: 'employeeName',
+      fixed: 'left',
     },
     {
       title: 'Salary Type',
