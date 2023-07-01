@@ -39,6 +39,7 @@ const Wages = () => {
   const [payrollRunningEmployees, setPayrollRunningEmployees] = React.useState(
     []
   );
+  const [attendanceData, setAttendanceData] = React.useState([]);
 
   useEffect(() => {
     // Get Active Employee List
@@ -71,12 +72,26 @@ const Wages = () => {
       });
     };
 
+    const getAttendanceData = async () => {
+      const querySnapshot = await getDocs(collection(db, 'attendanceData'));
+      const temp = [];
+      querySnapshot.forEach((doc) => {
+        temp.push({ ...doc.data(), id: doc.id });
+      });
+      return temp;
+    };
+
     getActiveEmployeeList().then((data) => {
       console.log('data', data);
       setActiveEmployeeList(data);
     });
 
     getDataAboutData();
+
+    getAttendanceData().then((data) => {
+      console.log('data', data);
+      setAttendanceData(data);
+    });
   }, []);
 
   useEffect(() => {
@@ -138,7 +153,30 @@ const Wages = () => {
       });
       // Iterate over each employee and add more data for payroll
       temp.forEach((employee) => {
+        const employeeAttendanceInfo = attendanceData.find(
+          (data) => data.employeeId === employee.employeeId
+        );
+        // If employeeAttendanceInfo is not found, then set all values to 0
         employee.noOfDaysWorked = 0;
+        if (employeeAttendanceInfo[currentYear]) {
+          // If employeeAttendanceInfo has noOfPayableDays, then set it
+          // Else, calculate noOfPayableDays where P = full day, H = half day, P = paid leave. Rest are all non-payable
+          if (
+            employeeAttendanceInfo[currentYear][currentMonth]?.noOfPayableDays
+          ) {
+            employee.noOfDaysWorked =
+              employeeAttendanceInfo[currentYear][currentMonth].noOfPayableDays;
+          } else {
+            // Count P, H, P from currentMonth object {1: 'P', 2: 'H', 3: 'P', etc}
+            const attendance =
+              employeeAttendanceInfo[currentYear][currentMonth];
+            Object.keys(attendance).forEach((key) => {
+              if (attendance[key] === 'P' || attendance[key] === 'H') {
+                employee.noOfDaysWorked += 1;
+              }
+            });
+          }
+        }
         employee.allowances = 0;
         employee.otHours = 0;
         // OT amount is gross wage / no. of days in month / 8
@@ -347,6 +385,7 @@ const Wages = () => {
           sticky
           columns={[...columns, ...payrollColumns]}
           dataSource={payrollRunningEmployees}
+          scroll={{ x: 'max-content' }}
         />
       </Modal>
     </div>
