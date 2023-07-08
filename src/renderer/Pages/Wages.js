@@ -250,23 +250,34 @@ const Wages = () => {
         } else {
           employee.incentives = 0;
         }
+        employee.earnedWage =
+          employee.salaryType === 'hourly'
+            ? Math.round(
+                employee.grossWage * (employee.noOfDaysWorked / daysInMonth)
+              )
+            : employee.grossWage;
         // net wage is gross wage + incentive + otAmount + allowances
-        employee.netWage =
-          employee.grossWage +
-          employee.incentives +
-          employee.otAmount +
-          employee.allowances;
+        employee.netWage = Math.round(
+          employee.earnedWage +
+            employee.incentives +
+            employee.otAmount +
+            employee.allowances
+        );
 
         // wageForPF = if grossWage > 15000, then 15000 else grossWage
         employee.wageForPF =
-          employee.grossWage > 15000 ? 15000 : employee.grossWage;
+          employee.earnedWage > 15000 ? 15000 : employee.earnedWage;
         // wageForESI = if grossWage > 21000, then 21000 else grossWage
         employee.wageForESI =
-          employee.grossWage > 21000 ? 21000 : employee.grossWage;
+          employee.netWage > 21000 ? 21000 : employee.netWage;
         // professionalTax = 200
         employee.pfDeducted = Math.round(employee.wageForPF * 0.12);
-        employee.esiDeducted = Math.round(employee.wageForESI * 0.0075);
-        employee.professionalTax = 200;
+        employee.esiDeducted =
+          employee.wageForESI < 21000
+            ? Math.round(employee.wageForESI * 0.0075)
+            : 0;
+        employee.professionalTax =
+          employee.netWage < 15000 ? 0 : employee.netWage < 20000 ? 150 : 200;
         employee.tds = 0;
         employee.advanceCarryForward = advancesInfo?.totalAdvanceBalance || 0;
         employee.advanceAddition = 0;
