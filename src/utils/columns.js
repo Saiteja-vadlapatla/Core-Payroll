@@ -78,6 +78,12 @@ export const payrollColumns = [
     width: 100,
   },
   {
+    title: 'Advance Addition',
+    dataIndex: 'advanceAddition',
+    key: 'advanceAddition',
+    width: 100,
+  },
+  {
     title: 'Advance Ded',
     dataIndex: 'advanceDeducted',
     key: 'advanceDeducted',

@@ -41,6 +41,7 @@ const Wages = () => {
   );
   const [attendanceData, setAttendanceData] = React.useState([]);
   const [otData, setOtData] = React.useState([]);
+  const [advancesData, setAdvancesData] = React.useState([]);
 
   useEffect(() => {
     // Get Active Employee List
@@ -91,21 +92,35 @@ const Wages = () => {
       return temp;
     };
 
+    const getAdvancesData = async () => {
+      const querySnapshot = await getDocs(collection(db, 'advancesData'));
+      const temp = [];
+      querySnapshot.forEach((doc) => {
+        temp.push({ ...doc.data(), id: doc.id });
+      });
+      return temp;
+    };
+
     getActiveEmployeeList().then((data) => {
-      console.log('data', data);
+      console.log('active employee data', data);
       setActiveEmployeeList(data);
     });
 
     getDataAboutData();
 
     getAttendanceData().then((data) => {
-      console.log('data', data);
+      console.log('attendance data', data);
       setAttendanceData(data);
     });
 
     getOTData().then((data) => {
-      console.log('data', data);
+      console.log('ot data', data);
       setOtData(data);
+    });
+
+    getAdvancesData().then((data) => {
+      console.log('advances data', data);
+      setAdvancesData(data);
     });
   }, []);
 
@@ -198,6 +213,13 @@ const Wages = () => {
         const employeeOTInfo = otData.find(
           (data) => data.employeeId === employee.employeeId
         );
+
+        const advancesInfo = advancesData.find(
+          (data) => data.employeeId === employee.employeeId
+        );
+
+        console.log('advancesInfo', advancesInfo);
+
         employee.otHours = 0;
         if (employeeOTInfo[currentYear]) {
           // OT hour is marked per day. So, add all OT hours in currentMonth
@@ -246,9 +268,23 @@ const Wages = () => {
         employee.esiDeducted = Math.round(employee.wageForESI * 0.0075);
         employee.professionalTax = 200;
         employee.tds = 0;
-        employee.advanceCarryForward = 0;
-        employee.advanceDeducted = 0;
-        employee.advanceBalance = 0;
+        employee.advanceCarryForward = advancesInfo?.totalAdvanceBalance || 0;
+        employee.advanceAddition = 0;
+        // Advance addition = sum of advances added in currentMonth - advancesInfo[currentYear][currentMonth].installments array
+        const installments =
+          advancesInfo?.[currentYear]?.[currentMonth]?.installments;
+        if (installments?.length) {
+          employee.advanceAddition = installments.reduce(
+            (acc, curr) => acc + curr,
+            0
+          );
+        }
+        employee.advanceDeducted =
+          advancesInfo?.[currentYear]?.[currentMonth]?.advanceDeducted || 0;
+        employee.advanceBalance =
+          employee.advanceCarryForward +
+          employee.advanceAddition -
+          employee.advanceDeducted;
         employee.totalDeductions =
           employee.advanceDeducted +
           employee.professionalTax +
